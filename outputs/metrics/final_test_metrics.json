@@ -1,0 +1,22 @@
+{
+  "regression": {
+    "selected_model": "Random Forest",
+    "mae": 1663.1743889698648,
+    "rmse": 3037.042353590747,
+    "r2": 0.9260326266598203
+  },
+  "classification": {
+    "selected_model": "HistGradientBoosting",
+    "high_cost_threshold": 34962.096000000005,
+    "precision": 0.926829268292683,
+    "recall": 0.8837209302325582,
+    "f1": 0.9047619047619048,
+    "roc_auc": 0.9952941176470589,
+    "pr_auc": 0.9741348854777125
+  },
+  "split": {
+    "train_rows": 1875,
+    "test_rows": 468,
+    "random_state": 42
+  }
+}
