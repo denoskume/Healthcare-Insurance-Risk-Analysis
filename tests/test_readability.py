@@ -7,6 +7,9 @@ FILES_REQUIRING_DESCRIPTIVE_NAMES = [
     Path("src/modeling.py"),
     Path("src/evaluation.py"),
     Path("scripts/generate_outputs.py"),
+    Path("tests/test_features.py"),
+    Path("tests/test_modeling.py"),
+    Path("tests/test_evaluation.py"),
 ]
 
 DISALLOWED_GENERIC_NAMES = {
@@ -22,6 +25,12 @@ DISALLOWED_GENERIC_NAMES = {
     "df",
     "col",
     "out",
+    "Xtr",
+    "Xte",
+    "ytr",
+    "yte",
+    "gtr",
+    "gte",
 }
 
 
