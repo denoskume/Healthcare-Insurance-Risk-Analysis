@@ -15,6 +15,17 @@ def test_feature_contract_excludes_identifiers_and_target(sample_sources):
     assert len(X) == len(y) == len(groups)
 
 
+def test_missing_customer_ids_are_kept_in_one_valid_group(sample_sources):
+    hospitalisations = sample_sources["hospitalisations"].copy()
+    hospitalisations.loc[hospitalisations.index[:2], "Customer ID"] = "?"
+    analytical, _ = build_analytical_dataset(
+        hospitalisations, sample_sources["examinations"]
+    )
+    _, _, groups = prepare_feature_frame(clean_analytical_dataset(analytical))
+    assert groups.isna().sum() == 0
+    assert (groups == "__missing_customer_id__").sum() == 2
+
+
 def test_preprocessor_handles_unseen_category(sample_sources):
     analytical, _ = build_analytical_dataset(
         sample_sources["hospitalisations"], sample_sources["examinations"]
