@@ -1,7 +1,7 @@
 # Healthcare Insurance Risk Analysis
 
 <p align="center">
-  <strong>Applied machine learning for hospitalisation cost prediction and high-cost risk identification.</strong>
+  <strong>Machine learning for hospitalisation cost prediction and high-cost risk detection.</strong>
 </p>
 
 <p align="center">
@@ -12,24 +12,37 @@
 
 ---
 
-## Key Results
+## Overview
+
+This project uses hospitalisation and medical examination data for two tasks:
+
+1. Predict hospitalisation charges.
+2. Identify cases in the highest-cost 10%.
+
+The same customer never appears in both train and test sets. The final test set is kept separate during preprocessing, threshold selection, and model comparison.
+
+> This project is for machine learning analysis. It is not a clinical diagnosis system.
+
+## Results
 
 | Task | Selected model | Main test result |
 |---|---|---:|
-| Hospitalisation cost regression | **Random Forest Regressor** | **R² = 0.926** |
-| High-cost risk classification | **Histogram Gradient Boosting Classifier** | **PR-AUC = 0.968** |
+| Cost regression | **Random Forest Regressor** | **R² = 0.926** |
+| High-cost classification | **Histogram Gradient Boosting Classifier** | **PR-AUC = 0.968** |
 
-Additional held-out test metrics:
+Other test results:
 
 - **Regression:** MAE = **1,661.85**, RMSE = **3,028.73**
 - **Classification:** Precision = **0.902**, Recall = **0.860**, F1 = **0.881**, ROC-AUC = **0.993**
-- **High-cost threshold:** **34,962.10**, learned from the training partition only
+- **High-cost threshold:** **34,962.10**, calculated from the training data only
 
-> This is an analytical machine learning project, not a clinical diagnosis system.
+## Visual Results
 
-## Results & Visualizations
+The figures below are created by:
 
-All figures below are generated directly by `python -m scripts.generate_outputs` from the local analytical dataset.
+```bash
+python -m scripts.generate_outputs
+```
 
 ### Regression
 
@@ -53,28 +66,6 @@ All figures below are generated directly by `python -m scripts.generate_outputs`
   <img src="outputs/figures/classification_feature_importance.png" width="62%" alt="Classification permutation importance">
 </p>
 
-## What This Project Demonstrates
-
-- integration of hospitalisation and medical examination data
-- explicit data-quality validation and transparent cleaning
-- leakage-safe preprocessing
-- grouped train/test splitting by customer identifier
-- regression and imbalanced classification workflows
-- 5-fold grouped cross-validation
-- baseline and model comparison
-- held-out error analysis and permutation importance
-- reusable Python modules with automated tests
-- clear separation between identity data and analytical features
-
-## Problem
-
-The project addresses two related machine learning tasks:
-
-1. **Cost regression** — predict hospitalisation charges.
-2. **High-cost classification** — identify hospitalisation events in the highest-cost 10%.
-
-The final test set is isolated before preprocessing, threshold definition, and model selection. The same customer cannot appear in both train and test partitions.
-
 ## Data
 
 | Source | Rows | Main information |
@@ -82,47 +73,47 @@ The final test set is isolated before preprocessing, threshold definition, and m
 | Hospitalisation details | 2,343 | charges, date, children, hospital tier, city tier, state |
 | Medical examinations | 2,335 | BMI, HBA1C, medical history, surgeries, smoking status |
 
-A third supplied source contained names. It is intentionally excluded from the model and public repository so that identity data remains separate from analytical features.
+A third source contains names. It is not used by the model and is not included in the public repository.
 
-The analytical raw files are not redistributed until their publication and licensing terms are documented. `data/raw/README.md` lists the filenames required for local reproduction.
+The two analytical CSV files are also not published here until their source and licence are clearly documented. `data/raw/README.md` lists the files needed to reproduce the project locally.
 
-### Data-quality issues handled
+### Data issues handled
 
-- repeated placeholder customer identifier `?`
-- hospitalisation identifiers without a matching medical examination
-- unknown year and smoking-status values represented by `?`
-- inconsistent binary labels such as `Yes`, `yes`, and `No`
+- repeated customer ID placeholder `?`
+- hospitalisation rows without a matching medical examination
+- unknown year and smoking values stored as `?`
+- inconsistent labels such as `Yes`, `yes`, and `No`
 - surgery counts stored as text
 
-Unknown values remain missing rather than being silently invented.
+Unknown values stay missing. They are not replaced with invented values.
 
-## ML Workflow
+## Workflow
 
 ```text
-Raw analytical sources
-        ↓
-Schema + join validation
-        ↓
-Cleaning + type normalization
-        ↓
-Grouped split by Customer ID
-        ↓
-Train-only preprocessing
-        ↓
+Raw data
+   ↓
+Schema and join checks
+   ↓
+Cleaning and type conversion
+   ↓
+Grouped train/test split by Customer ID
+   ↓
+Preprocessing fitted on training data
+   ↓
 ┌──────────────────────┬─────────────────────────┐
 │ Cost regression      │ High-cost classification│
 └──────────────────────┴─────────────────────────┘
-        ↓
+   ↓
 5-fold grouped cross-validation
-        ↓
-Final untouched test evaluation
-        ↓
-Error analysis + permutation importance
+   ↓
+Final test evaluation
+   ↓
+Error analysis and permutation importance
 ```
 
-Imputation, encoding, scaling, model selection, and high-cost threshold estimation are all performed without using the final test set.
+Imputation, encoding, scaling, model selection, and the high-cost threshold use training data only.
 
-## Model Comparison
+## Models
 
 ### Cost Regression
 
@@ -134,7 +125,7 @@ Models compared:
 - Histogram Gradient Boosting Regressor
 - Histogram Gradient Boosting with log-transformed target
 
-**Selected model — Random Forest Regressor**
+Selected model: **Random Forest Regressor**
 
 | Metric | Test result |
 |---|---:|
@@ -151,7 +142,7 @@ Models compared:
 - Random Forest Classifier
 - Histogram Gradient Boosting Classifier
 
-**Selected model — Histogram Gradient Boosting Classifier**
+Selected model: **Histogram Gradient Boosting Classifier**
 
 | Metric | Test result |
 |---|---:|
@@ -161,21 +152,21 @@ Models compared:
 | ROC-AUC | **0.993** |
 | PR-AUC | **0.968** |
 
-PR-AUC and recall are emphasized because the positive high-cost class is intentionally rare.
+PR-AUC and recall are useful here because high-cost cases are rare.
 
-## Notebook Guide
+## Notebooks
 
 | Notebook | Purpose |
 |---|---|
-| `01_data_understanding.ipynb` | inspect schemas, keys, source dimensions, and join behaviour |
-| `02_data_quality_and_cleaning.ipynb` | validate sources, normalize values, and build the analytical dataset |
-| `03_exploratory_analysis.ipynb` | examine charge distribution and descriptive relationships |
-| `04_feature_engineering.ipynb` | define model features and leakage-safe preprocessing |
-| `05_cost_regression.ipynb` | compare regressors and evaluate the selected model |
-| `06_high_cost_classification.ipynb` | define the train-only risk threshold and compare classifiers |
-| `07_model_explainability_and_error_analysis.ipynb` | inspect prediction errors and permutation importance |
+| `01_data_understanding.ipynb` | inspect the sources, columns, IDs, and joins |
+| `02_data_quality_and_cleaning.ipynb` | clean the data and build the analytical dataset |
+| `03_exploratory_analysis.ipynb` | explore charges and main data patterns |
+| `04_feature_engineering.ipynb` | prepare features and preprocessing |
+| `05_cost_regression.ipynb` | compare regression models and evaluate the final model |
+| `06_high_cost_classification.ipynb` | define the high-cost target and compare classifiers |
+| `07_model_explainability_and_error_analysis.ipynb` | inspect errors and feature importance |
 
-Reusable implementation lives in `src/`; notebooks remain focused on analysis and interpretation.
+The reusable code is in `src/`. The notebooks focus on the analysis and results.
 
 ## Repository Structure
 
@@ -196,7 +187,9 @@ Healthcare-Insurance-Risk-Analysis/
 
 ## Run Locally
 
-Place the two analytical CSV files listed in `data/raw/README.md` inside `data/raw/`, then run:
+Place the two CSV files listed in `data/raw/README.md` inside `data/raw/`.
+
+Then run:
 
 ```bash
 python -m venv .venv
@@ -207,17 +200,17 @@ python -m scripts.generate_outputs
 jupyter notebook
 ```
 
-`generate_outputs.py` rebuilds the analytical dataset from the raw CSV files, reruns model selection and final evaluation, and writes reproducible figures and metrics to `outputs/`.
+`generate_outputs.py` rebuilds the analytical dataset, runs the models, and saves the figures and metrics in `outputs/`.
 
-Run notebooks `01` through `07` in order for the step-by-step analysis.
+Run notebooks `01` to `07` in order for the full analysis.
 
-## Limitations
+## Limits
 
-- The dataset is relatively small and does not establish clinical validity.
-- Some hospitalisation rows do not have a matching medical examination record.
-- Feature importance measures predictive contribution, not causality.
-- External validation would be required before generalising to real insurance populations.
+- The dataset is small.
+- Some hospitalisation rows have no matching medical examination.
+- Feature importance shows predictive value, not cause and effect.
+- The results would need external validation before use on real insurance populations.
 
-## Technologies
+## Stack
 
 **Python · pandas · NumPy · scikit-learn · Matplotlib · Jupyter · pytest · GitHub Actions**
