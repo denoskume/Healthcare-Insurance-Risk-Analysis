@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import pandas as pd
 from sklearn.metrics import ConfusionMatrixDisplay, PrecisionRecallDisplay
 
 from src.data import build_analytical_dataset, load_raw_sources
@@ -27,142 +26,203 @@ from src.validation import (
     validate_source_schema,
 )
 
-ROOT = Path(__file__).resolve().parents[1]
-RAW_DIR = ROOT / "data" / "raw"
-PROCESSED_DIR = ROOT / "data" / "processed"
-FIGURES_DIR = ROOT / "outputs" / "figures"
-METRICS_DIR = ROOT / "outputs" / "metrics"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+RAW_DATA_DIR = PROJECT_ROOT / "data" / "raw"
+PROCESSED_DATA_DIR = PROJECT_ROOT / "data" / "processed"
+FIGURES_OUTPUT_DIR = PROJECT_ROOT / "outputs" / "figures"
+METRICS_OUTPUT_DIR = PROJECT_ROOT / "outputs" / "metrics"
 
 
-def save_figure(path: Path) -> None:
+def save_current_figure(output_path: Path) -> None:
     plt.tight_layout()
-    plt.savefig(path, dpi=180, bbox_inches="tight")
+    plt.savefig(output_path, dpi=180, bbox_inches="tight")
     plt.close()
 
 
 def main() -> None:
-    FIGURES_DIR.mkdir(parents=True, exist_ok=True)
-    METRICS_DIR.mkdir(parents=True, exist_ok=True)
-    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+    FIGURES_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    METRICS_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    PROCESSED_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-    sources = load_raw_sources(RAW_DIR)
-    validate_source_schema(sources)
+    raw_sources = load_raw_sources(RAW_DATA_DIR)
+    validate_source_schema(raw_sources)
 
-    analytical, diagnostics = build_analytical_dataset(
-        sources["hospitalisations"], sources["examinations"]
+    analytical_dataset, data_diagnostics = build_analytical_dataset(
+        raw_sources["hospitalisations"],
+        raw_sources["examinations"],
     )
-    quality = validate_analytical_dataset(analytical)
-    cleaned = clean_analytical_dataset(analytical)
-    cleaned.to_csv(PROCESSED_DIR / "analytical_dataset.csv", index=False)
-
-    X, y, groups = prepare_feature_frame(cleaned)
-    X_train, X_test, y_train, y_test, groups_train, _ = grouped_train_test_split(
-        X, y, groups
+    data_quality_summary = validate_analytical_dataset(analytical_dataset)
+    cleaned_dataset = clean_analytical_dataset(analytical_dataset)
+    cleaned_dataset.to_csv(
+        PROCESSED_DATA_DIR / "analytical_dataset.csv",
+        index=False,
     )
 
-    preprocessor = build_preprocessor(X_train)
+    features, target_charges, customer_groups = prepare_feature_frame(cleaned_dataset)
+    (
+        training_features,
+        test_features,
+        training_charges,
+        test_charges,
+        training_customer_groups,
+        _,
+    ) = grouped_train_test_split(features, target_charges, customer_groups)
 
-    regression_models = get_regression_candidates(preprocessor)
+    feature_preprocessor = build_preprocessor(training_features)
+
+    regression_candidates = get_regression_candidates(feature_preprocessor)
     regression_comparison = compare_models_cv(
-        regression_models, X_train, y_train, groups_train, "regression"
+        regression_candidates,
+        training_features,
+        training_charges,
+        training_customer_groups,
+        "regression",
     )
-    regression_name = regression_comparison.iloc[0]["model"]
-    regression_model = regression_models[regression_name].fit(X_train, y_train)
-    regression_pred = regression_model.predict(X_test)
-    regression_result = regression_metrics(y_test, regression_pred)
+    selected_regression_name = regression_comparison.iloc[0]["model"]
+    selected_regression_model = regression_candidates[selected_regression_name].fit(
+        training_features,
+        training_charges,
+    )
+    regression_predictions = selected_regression_model.predict(test_features)
+    regression_test_metrics = regression_metrics(
+        test_charges,
+        regression_predictions,
+    )
 
-    y_train_high, y_test_high, threshold = derive_high_cost_labels(y_train, y_test)
-    classification_models = get_classification_candidates(preprocessor)
+    (
+        training_high_cost_labels,
+        test_high_cost_labels,
+        high_cost_threshold,
+    ) = derive_high_cost_labels(training_charges, test_charges)
+
+    classification_candidates = get_classification_candidates(feature_preprocessor)
     classification_comparison = compare_models_cv(
-        classification_models,
-        X_train,
-        y_train_high,
-        groups_train,
+        classification_candidates,
+        training_features,
+        training_high_cost_labels,
+        training_customer_groups,
         "classification",
     )
-    classification_name = classification_comparison.iloc[0]["model"]
-    classification_model = classification_models[classification_name].fit(
-        X_train, y_train_high
+    selected_classification_name = classification_comparison.iloc[0]["model"]
+    selected_classification_model = classification_candidates[
+        selected_classification_name
+    ].fit(
+        training_features,
+        training_high_cost_labels,
     )
-    classification_score = classification_model.predict_proba(X_test)[:, 1]
-    classification_pred = (classification_score >= 0.5).astype(int)
-    classification_result = classification_metrics(
-        y_test_high, classification_score, classification_pred
+    classification_probability_scores = selected_classification_model.predict_proba(
+        test_features
+    )[:, 1]
+    classification_predictions = (
+        classification_probability_scores >= 0.5
+    ).astype(int)
+    classification_test_metrics = classification_metrics(
+        test_high_cost_labels,
+        classification_probability_scores,
+        classification_predictions,
     )
 
-    regression_importance = permutation_importance_table(
-        regression_model,
-        X_test,
-        y_test,
+    regression_permutation_importance = permutation_importance_table(
+        selected_regression_model,
+        test_features,
+        test_charges,
         scoring="neg_mean_absolute_error",
         n_repeats=10,
     )
-    classification_importance = permutation_importance_table(
-        classification_model,
-        X_test,
-        y_test_high,
+    classification_permutation_importance = permutation_importance_table(
+        selected_classification_model,
+        test_features,
+        test_high_cost_labels,
         scoring="average_precision",
         n_repeats=10,
     )
 
     regression_comparison.to_csv(
-        METRICS_DIR / "regression_model_comparison.csv", index=False
+        METRICS_OUTPUT_DIR / "regression_model_comparison.csv",
+        index=False,
     )
     classification_comparison.to_csv(
-        METRICS_DIR / "classification_model_comparison.csv", index=False
+        METRICS_OUTPUT_DIR / "classification_model_comparison.csv",
+        index=False,
     )
-    regression_importance.to_csv(
-        METRICS_DIR / "regression_permutation_importance.csv", index=False
+    regression_permutation_importance.to_csv(
+        METRICS_OUTPUT_DIR / "regression_permutation_importance.csv",
+        index=False,
     )
-    classification_importance.to_csv(
-        METRICS_DIR / "classification_permutation_importance.csv", index=False
+    classification_permutation_importance.to_csv(
+        METRICS_OUTPUT_DIR / "classification_permutation_importance.csv",
+        index=False,
     )
 
     final_metrics = {
-        "diagnostics": diagnostics,
-        "quality": quality,
+        "diagnostics": data_diagnostics,
+        "quality": data_quality_summary,
         "regression": {
-            "selected_model": regression_name,
-            **regression_result,
+            "selected_model": selected_regression_name,
+            **regression_test_metrics,
         },
         "classification": {
-            "selected_model": classification_name,
-            "high_cost_threshold": threshold,
-            **classification_result,
+            "selected_model": selected_classification_name,
+            "high_cost_threshold": high_cost_threshold,
+            **classification_test_metrics,
         },
     }
-    (METRICS_DIR / "final_test_metrics.json").write_text(
-        json.dumps(final_metrics, indent=2), encoding="utf-8"
+    (METRICS_OUTPUT_DIR / "final_test_metrics.json").write_text(
+        json.dumps(final_metrics, indent=2),
+        encoding="utf-8",
     )
 
-    cleaned["charges"].plot.hist(bins=40, figsize=(8, 4), title="Hospitalisation charge distribution")
+    cleaned_dataset["charges"].plot.hist(
+        bins=40,
+        figsize=(8, 4),
+        title="Hospitalisation charge distribution",
+    )
     plt.xlabel("Charges")
-    save_figure(FIGURES_DIR / "charge_distribution.png")
+    save_current_figure(FIGURES_OUTPUT_DIR / "charge_distribution.png")
 
     plt.figure(figsize=(6, 6))
-    plt.scatter(y_test, regression_pred, alpha=0.55)
-    lower = min(float(y_test.min()), float(regression_pred.min()))
-    upper = max(float(y_test.max()), float(regression_pred.max()))
-    plt.plot([lower, upper], [lower, upper], linestyle="--")
+    plt.scatter(test_charges, regression_predictions, alpha=0.55)
+    minimum_charge = min(
+        float(test_charges.min()),
+        float(regression_predictions.min()),
+    )
+    maximum_charge = max(
+        float(test_charges.max()),
+        float(regression_predictions.max()),
+    )
+    plt.plot(
+        [minimum_charge, maximum_charge],
+        [minimum_charge, maximum_charge],
+        linestyle="--",
+    )
     plt.xlabel("Actual charges")
     plt.ylabel("Predicted charges")
     plt.title("Actual vs predicted hospitalisation charges")
-    save_figure(FIGURES_DIR / "actual_vs_predicted_regression.png")
+    save_current_figure(
+        FIGURES_OUTPUT_DIR / "actual_vs_predicted_regression.png"
+    )
 
     ConfusionMatrixDisplay.from_predictions(
-        y_test_high,
-        classification_pred,
+        test_high_cost_labels,
+        classification_predictions,
         display_labels=["Not high-cost", "High-cost"],
     )
     plt.title("High-cost classification confusion matrix")
-    save_figure(FIGURES_DIR / "classification_confusion_matrix.png")
+    save_current_figure(
+        FIGURES_OUTPUT_DIR / "classification_confusion_matrix.png"
+    )
 
-    PrecisionRecallDisplay.from_predictions(y_test_high, classification_score)
+    PrecisionRecallDisplay.from_predictions(
+        test_high_cost_labels,
+        classification_probability_scores,
+    )
     plt.title("High-cost classification precision-recall curve")
-    save_figure(FIGURES_DIR / "classification_pr_curve.png")
+    save_current_figure(FIGURES_OUTPUT_DIR / "classification_pr_curve.png")
 
-    regression_top = regression_importance.head(10).sort_values("importance_mean")
-    regression_top.plot.barh(
+    top_regression_features = regression_permutation_importance.head(10).sort_values(
+        "importance_mean"
+    )
+    top_regression_features.plot.barh(
         x="feature",
         y="importance_mean",
         legend=False,
@@ -171,10 +231,14 @@ def main() -> None:
     )
     plt.xlabel("Decrease in score after permutation")
     plt.ylabel("")
-    save_figure(FIGURES_DIR / "regression_feature_importance.png")
+    save_current_figure(
+        FIGURES_OUTPUT_DIR / "regression_feature_importance.png"
+    )
 
-    classification_top = classification_importance.head(10).sort_values("importance_mean")
-    classification_top.plot.barh(
+    top_classification_features = classification_permutation_importance.head(10).sort_values(
+        "importance_mean"
+    )
+    top_classification_features.plot.barh(
         x="feature",
         y="importance_mean",
         legend=False,
@@ -183,11 +247,13 @@ def main() -> None:
     )
     plt.xlabel("Decrease in score after permutation")
     plt.ylabel("")
-    save_figure(FIGURES_DIR / "classification_feature_importance.png")
+    save_current_figure(
+        FIGURES_OUTPUT_DIR / "classification_feature_importance.png"
+    )
 
     print(json.dumps(final_metrics, indent=2))
-    print(f"Saved figures to: {FIGURES_DIR}")
-    print(f"Saved metrics to: {METRICS_DIR}")
+    print(f"Saved figures to: {FIGURES_OUTPUT_DIR}")
+    print(f"Saved metrics to: {METRICS_OUTPUT_DIR}")
 
 
 if __name__ == "__main__":
