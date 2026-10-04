@@ -27,34 +27,6 @@ Additional held-out test metrics:
 
 > This is an analytical machine learning project, not a clinical diagnosis system.
 
-## Results at a Glance
-
-### Cost regression
-
-The charge distribution is strongly right-skewed. The selected Random Forest model captures the overall cost structure well on the untouched test set.
-
-<p align="center">
-  <img src="outputs/figures/regression_overview.svg" alt="Charge distribution and actual versus predicted hospitalisation charges" width="900">
-</p>
-
-### High-cost risk classification
-
-High cost is defined from the **90th percentile of training charges only**. The final classifier identifies the rare high-cost class with strong precision-recall performance.
-
-<p align="center">
-  <img src="outputs/figures/classification_performance.svg" alt="High-cost confusion matrix and precision-recall curve" width="900">
-</p>
-
-### Model interpretation
-
-Permutation importance is calculated on held-out data to show which inputs the fitted models rely on most for predictive performance.
-
-<p align="center">
-  <img src="outputs/figures/feature_importance.svg" alt="Permutation importance for regression and classification" width="900">
-</p>
-
-The strongest signals include **smoking status, BMI, year, and hospital tier**. These are predictive associations within this dataset, not medical causal claims.
-
 ## What This Project Demonstrates
 
 - integration of hospitalisation and medical examination data
