@@ -160,6 +160,8 @@ Healthcare-Insurance-Risk-Analysis/
 ├── outputs/
 │   ├── figures/
 │   └── metrics/
+├── scripts/
+│   └── generate_outputs.py
 ├── src/
 ├── tests/
 ├── requirements.txt
@@ -175,10 +177,13 @@ python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
 pip install -r requirements.txt
 pytest -q
+python scripts/generate_outputs.py
 jupyter notebook
 ```
 
-Run notebooks `01` through `07` in order.
+`generate_outputs.py` rebuilds the analytical dataset from the raw CSV files, reruns model selection and final evaluation, and writes reproducible figures and metrics to `outputs/`.
+
+Run notebooks `01` through `07` in order for the step-by-step analysis.
 
 ## Limitations
 
