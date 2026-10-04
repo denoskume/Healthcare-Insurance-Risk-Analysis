@@ -14,27 +14,57 @@
 
 ## Key Results
 
-| Task | Selected model | Main result |
+| Task | Selected model | Main test result |
 |---|---|---:|
-| Hospitalisation cost regression | Random Forest Regressor | **R² = 0.926** |
-| High-cost risk classification | Histogram Gradient Boosting Classifier | **PR-AUC = 0.974** |
+| Hospitalisation cost regression | **Random Forest Regressor** | **R² = 0.926** |
+| High-cost risk classification | **Histogram Gradient Boosting Classifier** | **PR-AUC = 0.974** |
 
-Additional test results:
+Additional held-out test metrics:
 
-- Regression: **MAE = 1,663.17**, **RMSE = 3,037.04**
-- Classification: **Precision = 0.927**, **Recall = 0.884**, **F1 = 0.905**, **ROC-AUC = 0.995**
-- High-cost threshold: **34,962.10**, learned from the training set only
+- **Regression:** MAE = **1,663.17**, RMSE = **3,037.04**
+- **Classification:** Precision = **0.927**, Recall = **0.884**, F1 = **0.905**, ROC-AUC = **0.995**
+- **High-cost threshold:** **34,962.10**, learned from the training partition only
+
+> This is an analytical machine learning project, not a clinical diagnosis system.
+
+## Results at a Glance
+
+### Cost regression
+
+The charge distribution is strongly right-skewed. The selected Random Forest model captures the overall cost structure well on the untouched test set.
+
+<p align="center">
+  <img src="outputs/figures/regression_overview.svg" alt="Charge distribution and actual versus predicted hospitalisation charges" width="900">
+</p>
+
+### High-cost risk classification
+
+High cost is defined from the **90th percentile of training charges only**. The final classifier identifies the rare high-cost class with strong precision-recall performance.
+
+<p align="center">
+  <img src="outputs/figures/classification_performance.svg" alt="High-cost confusion matrix and precision-recall curve" width="900">
+</p>
+
+### Model interpretation
+
+Permutation importance is calculated on held-out data to show which inputs the fitted models rely on most for predictive performance.
+
+<p align="center">
+  <img src="outputs/figures/feature_importance.svg" alt="Permutation importance for regression and classification" width="900">
+</p>
+
+The strongest signals include **smoking status, BMI, year, and hospital tier**. These are predictive associations within this dataset, not medical causal claims.
 
 ## What This Project Demonstrates
 
 - integration of hospitalisation and medical examination data
-- explicit data-quality validation and cleaning
+- explicit data-quality validation and transparent cleaning
 - leakage-safe preprocessing
-- grouped train/test splitting by patient identifier
+- grouped train/test splitting by customer identifier
 - regression and imbalanced classification workflows
 - 5-fold grouped cross-validation
 - baseline and model comparison
-- error analysis and permutation importance
+- held-out error analysis and permutation importance
 - reusable Python modules with automated tests
 - clear separation between identity data and analytical features
 
@@ -43,11 +73,9 @@ Additional test results:
 The project addresses two related machine learning tasks:
 
 1. **Cost regression** — predict hospitalisation charges.
-2. **High-cost classification** — identify hospitalisation events in the top 10% of charges.
+2. **High-cost classification** — identify hospitalisation events in the highest-cost 10%.
 
-The classification threshold is estimated from the training partition only. The final test set remains untouched during preprocessing, threshold definition, and model selection.
-
-> This repository is an analytical machine learning project, not a clinical diagnosis system.
+The final test set is isolated before preprocessing, threshold definition, and model selection. The same customer cannot appear in both train and test partitions.
 
 ## Data
 
@@ -56,22 +84,21 @@ The classification threshold is estimated from the training partition only. The 
 | Hospitalisation details | 2,343 | charges, date, children, hospital tier, city tier, state |
 | Medical examinations | 2,335 | BMI, HBA1C, medical history, surgeries, smoking status |
 
-A third supplied source contained names. It is intentionally excluded from both the public repository and model features so that identity data stays separate from analytical data.
+A third supplied source contained names. It is intentionally excluded from the model and public repository so that identity data remains separate from analytical features.
 
-The raw analytical files are not redistributed until their publication and licensing terms are documented. `data/raw/README.md` lists the expected filenames for local reproduction.
+The analytical raw files are not redistributed until their publication and licensing terms are documented. `data/raw/README.md` lists the filenames required for local reproduction.
 
 ### Data-quality issues handled
 
-- placeholder customer identifier `?` appearing repeatedly
+- repeated placeholder customer identifier `?`
 - hospitalisation identifiers without a matching medical examination
-- unknown year values represented by `?`
-- unknown smoking-status values represented by `?`
+- unknown year and smoking-status values represented by `?`
 - inconsistent binary labels such as `Yes`, `yes`, and `No`
 - surgery counts stored as text
 
 Unknown values remain missing rather than being silently invented.
 
-## Workflow
+## ML Workflow
 
 ```text
 Raw analytical sources
@@ -95,7 +122,7 @@ Final untouched test evaluation
 Error analysis + permutation importance
 ```
 
-The same customer cannot appear in both train and test partitions. Imputation, encoding, scaling, model selection, and high-cost threshold estimation are performed without using the final test set.
+Imputation, encoding, scaling, model selection, and high-cost threshold estimation are all performed without using the final test set.
 
 ## Model Comparison
 
@@ -119,8 +146,6 @@ Models compared:
 
 ### High-Cost Classification
 
-High cost is defined using the **90th percentile of training charges only**.
-
 Models compared:
 
 - Prior-probability baseline
@@ -140,30 +165,19 @@ Models compared:
 
 PR-AUC and recall are emphasized because the positive high-cost class is intentionally rare.
 
-## Explainability and Error Analysis
-
-The final analysis examines:
-
-- actual vs predicted hospitalisation charges
-- largest regression errors
-- false positives and false negatives
-- permutation importance for both selected models
-
-The strongest predictive signals include smoking status, BMI, year, and hospital tier. These are **predictive associations within this dataset**, not medical causal claims.
-
 ## Notebook Guide
 
 | Notebook | Purpose |
 |---|---|
-| `01_data_understanding.ipynb` | inspect schemas, distributions, keys, and join behaviour |
-| `02_data_quality_and_cleaning.ipynb` | normalize values and build the analytical dataset |
-| `03_exploratory_analysis.ipynb` | examine cost distribution and feature relationships |
+| `01_data_understanding.ipynb` | inspect schemas, keys, source dimensions, and join behaviour |
+| `02_data_quality_and_cleaning.ipynb` | validate sources, normalize values, and build the analytical dataset |
+| `03_exploratory_analysis.ipynb` | examine charge distribution and descriptive relationships |
 | `04_feature_engineering.ipynb` | define model features and leakage-safe preprocessing |
 | `05_cost_regression.ipynb` | compare regressors and evaluate the selected model |
-| `06_high_cost_classification.ipynb` | define train-only risk threshold and compare classifiers |
-| `07_model_explainability_and_error_analysis.ipynb` | inspect errors and permutation importance |
+| `06_high_cost_classification.ipynb` | define the train-only risk threshold and compare classifiers |
+| `07_model_explainability_and_error_analysis.ipynb` | inspect prediction errors and permutation importance |
 
-Reusable implementation lives in `src/`; the notebooks focus on analysis and interpretation.
+Reusable implementation lives in `src/`; notebooks remain focused on analysis and interpretation.
 
 ## Repository Structure
 
@@ -171,7 +185,9 @@ Reusable implementation lives in `src/`; the notebooks focus on analysis and int
 Healthcare-Insurance-Risk-Analysis/
 ├── data/raw/README.md
 ├── notebooks/
-├── outputs/metrics/
+├── outputs/
+│   ├── figures/
+│   └── metrics/
 ├── src/
 ├── tests/
 ├── requirements.txt
@@ -196,9 +212,9 @@ Run notebooks `01` through `07` in order.
 
 - The dataset is relatively small and does not establish clinical validity.
 - Some hospitalisation rows do not have a matching medical examination record.
-- Feature importance reflects predictive contribution, not causality.
+- Feature importance measures predictive contribution, not causality.
 - External validation would be required before generalising to real insurance populations.
 
 ## Technologies
 
-**Python · pandas · NumPy · scikit-learn · Matplotlib · Jupyter · pytest**
+**Python · pandas · NumPy · scikit-learn · Matplotlib · Jupyter · pytest · GitHub Actions**
