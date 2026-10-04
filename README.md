@@ -27,6 +27,32 @@ Additional held-out test metrics:
 
 > This is an analytical machine learning project, not a clinical diagnosis system.
 
+## Results & Visualizations
+
+All figures below are generated directly by `python -m scripts.generate_outputs` from the local analytical dataset.
+
+### Regression
+
+<p align="center">
+  <img src="outputs/figures/charge_distribution.png" width="48%" alt="Hospitalisation charge distribution">
+  <img src="outputs/figures/actual_vs_predicted_regression.png" width="48%" alt="Actual versus predicted hospitalisation charges">
+</p>
+
+<p align="center">
+  <img src="outputs/figures/regression_feature_importance.png" width="62%" alt="Regression permutation importance">
+</p>
+
+### Classification
+
+<p align="center">
+  <img src="outputs/figures/classification_confusion_matrix.png" width="48%" alt="High-cost classification confusion matrix">
+  <img src="outputs/figures/classification_pr_curve.png" width="48%" alt="High-cost classification precision-recall curve">
+</p>
+
+<p align="center">
+  <img src="outputs/figures/classification_feature_importance.png" width="62%" alt="Classification permutation importance">
+</p>
+
 ## What This Project Demonstrates
 
 - integration of hospitalisation and medical examination data
