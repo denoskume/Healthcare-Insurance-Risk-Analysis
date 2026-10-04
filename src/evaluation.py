@@ -2,61 +2,97 @@ import numpy as np
 import pandas as pd
 from sklearn.inspection import permutation_importance
 from sklearn.metrics import (
-    average_precision_score, f1_score, mean_absolute_error,
-    mean_squared_error, precision_score, r2_score, recall_score, roc_auc_score,
+    average_precision_score,
+    f1_score,
+    mean_absolute_error,
+    mean_squared_error,
+    precision_score,
+    r2_score,
+    recall_score,
+    roc_auc_score,
 )
 
 
-def regression_metrics(y_true, y_pred) -> dict[str, float]:
+def regression_metrics(actual_values, predicted_values) -> dict[str, float]:
     return {
-        "mae": float(mean_absolute_error(y_true, y_pred)),
-        "rmse": float(np.sqrt(mean_squared_error(y_true, y_pred))),
-        "r2": float(r2_score(y_true, y_pred)),
+        "mae": float(mean_absolute_error(actual_values, predicted_values)),
+        "rmse": float(np.sqrt(mean_squared_error(actual_values, predicted_values))),
+        "r2": float(r2_score(actual_values, predicted_values)),
     }
 
 
-def classification_metrics(y_true, y_score, y_pred) -> dict[str, float]:
+def classification_metrics(
+    actual_labels,
+    probability_scores,
+    predicted_labels,
+) -> dict[str, float]:
     return {
-        "precision": float(precision_score(y_true, y_pred, zero_division=0)),
-        "recall": float(recall_score(y_true, y_pred, zero_division=0)),
-        "f1": float(f1_score(y_true, y_pred, zero_division=0)),
-        "roc_auc": float(roc_auc_score(y_true, y_score)),
-        "pr_auc": float(average_precision_score(y_true, y_score)),
+        "precision": float(
+            precision_score(actual_labels, predicted_labels, zero_division=0)
+        ),
+        "recall": float(recall_score(actual_labels, predicted_labels, zero_division=0)),
+        "f1": float(f1_score(actual_labels, predicted_labels, zero_division=0)),
+        "roc_auc": float(roc_auc_score(actual_labels, probability_scores)),
+        "pr_auc": float(average_precision_score(actual_labels, probability_scores)),
     }
 
 
-def regression_error_table(X_meta, y_true, y_pred) -> pd.DataFrame:
-    table = pd.DataFrame(X_meta).reset_index(drop=True).copy()
-    table["actual"] = np.asarray(y_true)
-    table["predicted"] = np.asarray(y_pred)
-    table["error"] = table["predicted"] - table["actual"]
-    table["absolute_error"] = np.abs(table["error"])
-    return table.sort_values("absolute_error", ascending=False).reset_index(drop=True)
+def regression_error_table(
+    metadata_features,
+    actual_values,
+    predicted_values,
+) -> pd.DataFrame:
+    error_table = pd.DataFrame(metadata_features).reset_index(drop=True).copy()
+    error_table["actual"] = np.asarray(actual_values)
+    error_table["predicted"] = np.asarray(predicted_values)
+    error_table["error"] = error_table["predicted"] - error_table["actual"]
+    error_table["absolute_error"] = np.abs(error_table["error"])
+    return error_table.sort_values(
+        "absolute_error",
+        ascending=False,
+    ).reset_index(drop=True)
 
 
-def classification_error_table(X_meta, y_true, y_pred, y_score) -> pd.DataFrame:
-    table = pd.DataFrame(X_meta).reset_index(drop=True).copy()
-    table["actual"] = np.asarray(y_true)
-    table["predicted"] = np.asarray(y_pred)
-    table["score"] = np.asarray(y_score)
-    table["error_type"] = np.select(
+def classification_error_table(
+    metadata_features,
+    actual_labels,
+    predicted_labels,
+    probability_scores,
+) -> pd.DataFrame:
+    error_table = pd.DataFrame(metadata_features).reset_index(drop=True).copy()
+    error_table["actual"] = np.asarray(actual_labels)
+    error_table["predicted"] = np.asarray(predicted_labels)
+    error_table["score"] = np.asarray(probability_scores)
+    error_table["error_type"] = np.select(
         [
-            (table["actual"] == 1) & (table["predicted"] == 0),
-            (table["actual"] == 0) & (table["predicted"] == 1),
+            (error_table["actual"] == 1) & (error_table["predicted"] == 0),
+            (error_table["actual"] == 0) & (error_table["predicted"] == 1),
         ],
         ["false_negative", "false_positive"],
         default="correct",
     )
-    return table
+    return error_table
 
 
-def permutation_importance_table(model, X, y, scoring: str, n_repeats: int = 10, random_state: int = 42) -> pd.DataFrame:
-    result = permutation_importance(
-        model, X, y, scoring=scoring, n_repeats=n_repeats,
-        random_state=random_state, n_jobs=-1,
+def permutation_importance_table(
+    model,
+    features,
+    target,
+    scoring: str,
+    n_repeats: int = 10,
+    random_state: int = 42,
+) -> pd.DataFrame:
+    importance_result = permutation_importance(
+        model,
+        features,
+        target,
+        scoring=scoring,
+        n_repeats=n_repeats,
+        random_state=random_state,
+        n_jobs=-1,
     )
     return pd.DataFrame({
-        "feature": X.columns,
-        "importance_mean": result.importances_mean,
-        "importance_std": result.importances_std,
+        "feature": features.columns,
+        "importance_mean": importance_result.importances_mean,
+        "importance_std": importance_result.importances_std,
     }).sort_values("importance_mean", ascending=False).reset_index(drop=True)
