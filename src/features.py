@@ -6,12 +6,18 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 EXCLUDED_FEATURES = {"Customer ID", "charges", "name"}
+MISSING_CUSTOMER_GROUP = "__missing_customer_id__"
 
 
 def prepare_feature_frame(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series, pd.Series]:
     model_df = df.copy()
     y = pd.to_numeric(model_df["charges"], errors="raise").astype(float)
-    groups = model_df["Customer ID"].astype(str)
+    groups = (
+        model_df["Customer ID"]
+        .astype("string")
+        .fillna(MISSING_CUSTOMER_GROUP)
+        .astype(str)
+    )
     X = model_df.drop(columns=[c for c in EXCLUDED_FEATURES if c in model_df.columns])
     numeric_candidates = ["year", "date", "children", "BMI", "HBA1C", "NumberOfMajorSurgeries"]
     for col in numeric_candidates:
