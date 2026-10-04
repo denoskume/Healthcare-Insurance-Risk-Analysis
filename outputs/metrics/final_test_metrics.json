@@ -1,22 +1,40 @@
 {
+  "diagnostics": {
+    "hospitalisation_rows": 2343,
+    "examination_rows": 2335,
+    "join_rows": 2343,
+    "duplicate_ids": [
+      "?"
+    ],
+    "duplicate_extra_rows": 5,
+    "unmatched_ids": [
+      "?",
+      "id2444",
+      "id3444"
+    ],
+    "unmatched_row_count": 8
+  },
+  "quality": {
+    "rows": 2343,
+    "duplicate_extra_rows": 5,
+    "unknown_year_count": 2,
+    "unknown_smoker_count": 2,
+    "missing_medical_rows": 8,
+    "non_positive_charge_rows": 0
+  },
   "regression": {
     "selected_model": "Random Forest",
-    "mae": 1663.1743889698648,
-    "rmse": 3037.042353590747,
-    "r2": 0.9260326266598203
+    "mae": 1661.8542248626372,
+    "rmse": 3028.729706196778,
+    "r2": 0.9264369827094532
   },
   "classification": {
     "selected_model": "HistGradientBoosting",
     "high_cost_threshold": 34962.096000000005,
-    "precision": 0.926829268292683,
-    "recall": 0.8837209302325582,
-    "f1": 0.9047619047619048,
-    "roc_auc": 0.9952941176470589,
-    "pr_auc": 0.9741348854777125
-  },
-  "split": {
-    "train_rows": 1875,
-    "test_rows": 468,
-    "random_state": 42
+    "precision": 0.9024390243902439,
+    "recall": 0.8604651162790697,
+    "f1": 0.8809523809523809,
+    "roc_auc": 0.9925581395348837,
+    "pr_auc": 0.9684662077536874
   }
 }
