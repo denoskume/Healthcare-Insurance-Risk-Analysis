@@ -17,12 +17,12 @@
 | Task | Selected model | Main test result |
 |---|---|---:|
 | Hospitalisation cost regression | **Random Forest Regressor** | **R² = 0.926** |
-| High-cost risk classification | **Histogram Gradient Boosting Classifier** | **PR-AUC = 0.974** |
+| High-cost risk classification | **Histogram Gradient Boosting Classifier** | **PR-AUC = 0.968** |
 
 Additional held-out test metrics:
 
-- **Regression:** MAE = **1,663.17**, RMSE = **3,037.04**
-- **Classification:** Precision = **0.927**, Recall = **0.884**, F1 = **0.905**, ROC-AUC = **0.995**
+- **Regression:** MAE = **1,661.85**, RMSE = **3,028.73**
+- **Classification:** Precision = **0.902**, Recall = **0.860**, F1 = **0.881**, ROC-AUC = **0.993**
 - **High-cost threshold:** **34,962.10**, learned from the training partition only
 
 > This is an analytical machine learning project, not a clinical diagnosis system.
@@ -112,8 +112,8 @@ Models compared:
 
 | Metric | Test result |
 |---|---:|
-| MAE | **1,663.17** |
-| RMSE | **3,037.04** |
+| MAE | **1,661.85** |
+| RMSE | **3,028.73** |
 | R² | **0.926** |
 
 ### High-Cost Classification
@@ -129,11 +129,11 @@ Models compared:
 
 | Metric | Test result |
 |---|---:|
-| Precision | **0.927** |
-| Recall | **0.884** |
-| F1 | **0.905** |
-| ROC-AUC | **0.995** |
-| PR-AUC | **0.974** |
+| Precision | **0.902** |
+| Recall | **0.860** |
+| F1 | **0.881** |
+| ROC-AUC | **0.993** |
+| PR-AUC | **0.968** |
 
 PR-AUC and recall are emphasized because the positive high-cost class is intentionally rare.
 
