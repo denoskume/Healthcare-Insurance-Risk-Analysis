@@ -214,3 +214,27 @@ Run notebooks `01` to `07` in order for the full analysis.
 ## Stack
 
 **Python · pandas · NumPy · scikit-learn · Matplotlib · Jupyter · pytest · GitHub Actions**
+
+
+## Streamlit application — RiskLens
+
+A responsive Streamlit dashboard has been added in app.py.
+
+- Model performance: previously validated offline test metrics and generated figures.
+- Train & predict: upload two authorized CSV datasets to train Random Forest and Histogram Gradient Boosting models in the current application session, then run example predictions.
+- Methodology: data quality, grouped validation and evaluation details.
+
+Deploy on Streamlit Community Cloud:
+
+1. Sign in at https://share.streamlit.io using the GitHub account authorized for this repository.
+2. Create app: repository denoskume/Healthcare-Insurance-Risk-Analysis, branch main, entrypoint app.py.
+3. Select Python 3.11 (if available) and click Deploy.
+
+The app does not distribute medical CSV files or fitted models. Raw data redistribution rights have not been established. Avoid uploading personally identifying medical records to a public demo. The initial dashboard reports offline historical metrics, not results from a public live pre-trained model.
+
+Local run:
+
+    pip install -r requirements-app.txt
+    streamlit run app.py
+
+A Dockerfile is also available for Docker-based hosting.
